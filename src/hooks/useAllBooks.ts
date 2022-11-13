@@ -12,6 +12,7 @@ export const useAllBooks = () => {
         const books: BookType[] = [];
         getAll.docs.map((doc) => {
           const book: BookType = {
+            book_id: doc.id,
             id: doc.data().id,
             title: doc.data().title,
             author: doc.data().author,

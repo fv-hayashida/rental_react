@@ -6,7 +6,18 @@ import { RentalBooksDataGrid } from "../organisms/RentalBooksDataGrid";
 import { BookType } from "../../types/book";
 import { RegistRentalModal } from "../organisms/RegistRentalModal";
 import db from "../../libs/firebaseConfig";
-import { collection, getDocs, doc, addDoc, setDoc, getDoc, query, where } from "firebase/firestore";
+import {
+  collection,
+  getDocs,
+  doc,
+  addDoc,
+  setDoc,
+  getDoc,
+  query,
+  where,
+  deleteDoc,
+  Timestamp as fireTs,
+} from "firebase/firestore";
 
 export const LendingBooksList: FC = () => {
   const [bookIds, setBookIds] = useState<any>([]);
@@ -20,20 +31,20 @@ export const LendingBooksList: FC = () => {
     getBooks();
   }, []);
 
-  const onCheckBooks = () => {
+  const onCheckRentalBooks = () => {
     if (!bookIds.length) {
       alert("選択されていません");
       return;
     }
-
-    //合計金額を計算
+    // チェックされた本のリストを作成
     setTotalPrice(0);
-    const list = bookIds.map((bookId: any) => {
-      const book = allBooks[bookId - 1];
-      setTotalPrice((prevValue) => prevValue + book.price);
-      return book;
+    const list = bookIds.map((book_id: any) => {
+      const book = allBooks.filter((book) => {
+        return book.id === book_id;
+      });
+      setTotalPrice((prevValue) => prevValue + book[0].price);
+      return book[0];
     });
-
     // idで昇順に並び替える。anyはどうすればよい？
     list.sort((a: any, b: any) => a.id - b.id);
     setSelectedBooks(list);
@@ -42,33 +53,75 @@ export const LendingBooksList: FC = () => {
 
   // 貸出の登録処理
   const onRegistBooks = () => {
+    const rentalCollection = collection(db, "rental_books");
+    selectedBooks.map((rental) => {
+      const book = {
+        book_id: rental.book_id,
+        user_id: "abcd",
+        created_at: fireTs.now(),
+        returned_at: fireTs.now(),
+      };
+      addDoc(rentalCollection, book);
+    });
+    console.log(selectedBooks);
+
+    alert("レンタルしました");
+    setIsOpen(false);
+  };
+
+  // 全削除
+  const onAllDeleteButton = () => {
     const rentalCollection = collection(db, "all_books");
     getDocs(rentalCollection)
       .then((getAll) => {
-        const books: BookType[] = [];
-        getAll.docs.map((doc) => {
-          const book: BookType = {
-            id: doc.data().id,
-            title: doc.data().title,
-            author: doc.data().author,
-            price: doc.data().price,
-          };
-          books.push(book);
+        getAll.docs.map((snap) => {
+          deleteDoc(doc(db, "all_books", snap.id));
         });
-        console.log(books);
       })
       .catch(() => {
-        alert("貸出登録に失敗しました");
+        alert("書籍の取得に失敗しました");
       });
+  };
 
-    alert("rental");
-    setIsOpen(false);
+  // レンタル全削除
+  const onRentalDeleteButton = () => {
+    const rentalCollection = collection(db, "rental_books");
+    getDocs(rentalCollection)
+      .then((getAll) => {
+        getAll.docs.map((snap) => {
+          deleteDoc(doc(db, "rental_books", snap.id));
+        });
+      })
+      .catch(() => {
+        alert("書籍の取得に失敗しました");
+      });
+  };
+
+  // 本登録
+  const onAllAddButton = () => {
+    const bookList: Array<BookType> = [
+      { id: 1, title: "吾輩は猫である", author: "夏目漱石", price: 100 },
+      { id: 2, title: "銀河鉄道の夜", author: "芥川龍之介", price: 120 },
+      { id: 3, title: "ドラゴンボール", author: "鳥山明", price: 200 },
+    ];
+
+    const booksCollection = collection(db, "all_books");
+    bookList.map((book) => {
+      addDoc(booksCollection, book);
+    });
   };
 
   return (
     <>
       <Header pageTitle={"書籍一覧"} />
       <Container maxWidth="md" sx={{ mt: 3 }}>
+        <Box>
+          やり直しボタン
+          <Button onClick={onAllDeleteButton}>本全削除</Button>
+          <Button onClick={onAllAddButton}>本登録</Button>
+          <Button onClick={onRentalDeleteButton}>レンタル削除</Button>
+        </Box>
+
         <Box sx={{ display: "flex", justifyContent: "space-between", p: 2 }}>
           <TextField
             id="outlined-basic"
@@ -82,7 +135,7 @@ export const LendingBooksList: FC = () => {
         <RentalBooksDataGrid setBookIds={setBookIds} allBooks={allBooks} />
 
         <Box sx={{ width: "full", textAlign: "right", mt: 2, mr: 4 }}>
-          <Button variant="contained" color="primary" type="submit" onClick={onCheckBooks}>
+          <Button variant="contained" color="primary" type="submit" onClick={onCheckRentalBooks}>
             レンタル確認
           </Button>
         </Box>

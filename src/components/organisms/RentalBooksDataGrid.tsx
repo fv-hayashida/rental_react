@@ -7,6 +7,7 @@ type Props = {
 };
 
 const columns: GridColDef[] = [
+  { field: "id", headerName: "id", width: 200, editable: false },
   { field: "title", headerName: "タイトル", width: 300, editable: false },
   { field: "author", headerName: "著者", width: 150, editable: false },
   { field: "price", headerName: "価格", type: "number", width: 100, editable: false },
@@ -29,6 +30,7 @@ export const RentalBooksDataGrid = (props: Props) => {
         disableColumnMenu={false}
         // disableSelectionOnClick
         onSelectionModelChange={(RowId) => {
+          console.log(RowId);
           setBookIds(RowId);
         }}
       />

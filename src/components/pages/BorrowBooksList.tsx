@@ -35,6 +35,7 @@ export const BorrowBooksList: FC = () => {
       return;
     }
 
+    // チェックされた本のリストを作成
     setTotalPrice(0);
     const list = bookIds.map((bookId: any) => {
       const book = allBooks[bookId - 1];
